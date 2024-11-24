@@ -7,8 +7,6 @@ services:
       POSTGRES_PASSWORD: pass
       POSTGRES_USER: user
       POSTGRES_DB: db
-      TZ: 'Europe/Kyiv'
-      PGTZ: 'Europe/Kyiv'
     restart: always
     ports:
       - 5432:5432
