@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:13.0-alpine
+    environment:
+      POSTGRES_PASSWORD: pass
+      POSTGRES_USER: user
+      POSTGRES_DB: db
+      TZ: 'Europe/Kyiv'
+      PGTZ: 'Europe/Kyiv'
+    restart: always
+    ports:
+      - 5432:5432
+    volumes:
+      - ./db_data:/var/lib/postgresql/data/
