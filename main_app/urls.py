@@ -1,3 +1,7 @@
 from django.urls import path
+from . import views
 
-urlpatterns = []
+
+urlpatterns = [
+    path('zalupa_ebamaia/', views.index, name='index'),
+]

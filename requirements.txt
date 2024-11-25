@@ -2,4 +2,5 @@ Django==4.2.4
 django-environ==0.11.2
 python-telegram-bot==20.6
 psycopg2==2.9.7
+python-amazon-paapi==5.0.1
 requests

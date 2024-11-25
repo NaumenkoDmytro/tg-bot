@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+from amazon_paapi.models import Country
 from pathlib import Path
 import os
 import environ
@@ -150,6 +151,14 @@ else:
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = 'main_app.User'
+
+# Amazon
+
+AMAZON_ACCESS_KEY = env('AMAZON_ACCESS_KEY')
+AMAZON_SECRET_KEY = env('AMAZON_SECRET_KEY')
+AMAZON_COUNTRY = Country.ES
+AMAZON_THROTTLING = 10
+AMAZON_ASSOCIATE_TAG = env('AMAZON_ASSOCIATE_TAG')
 
 if not DEBUG:
     try:

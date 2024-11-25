@@ -12,14 +12,20 @@ class InfoBot:
         self.__CHANEL_ID = chanel_id
 
     @staticmethod
-    def __send_message(msg: str, api_token: str, chanel_id: str):
-        url = f"https://api.telegram.org/bot{api_token}/sendMessage?chat_id={chanel_id}&text={msg}"
-        requests.post(url=url)
+    def __send_message(api_token: str, data = None):
+        url = f"https://api.telegram.org/bot{api_token}/sendPhoto"
+        print(requests.post(url=url, data=data))
 
     def send_message(self, data: dict):
-        msg = f""""""
+        msg = f"""{data['title']}\n\n{data['product_link']}"""
 
-        self.__send_message(msg=msg, api_token=self.__API_TOKEN, chanel_id=self.__CHANEL_ID)
+        payload = {
+            'chat_id': self.__CHANEL_ID,
+            'caption': msg,
+            'photo': data['image'],
+        }
+
+        self.__send_message(api_token=self.__API_TOKEN, data=payload)
         print("Message sent")
 
 
@@ -31,9 +37,9 @@ def init_telegram_bots() -> List[InfoBot]:
     if bot_credentials:
         try:
             for bot in bot_credentials:
-                telegram_info_bots.append(InfoBot(api_token=bot.api_token,
-                                                  chanel_id=bot.chanel_id,
-                                                  is_bot_enable=bot.is_bot_enable)
+                telegram_info_bots.append(InfoBot(api_token=bot.bot_api_token,
+                                                  chanel_id=bot.channel_id,
+                                                  is_bot_enable=bot.is_enabled)
                                           )
         except ValueError as ex:
             print(f"error: {ex}")
