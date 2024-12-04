@@ -1,17 +1,12 @@
 from PIL import Image, ImageDraw, ImageFont
 import requests
+from django.utils.termcolors import background
+
 from tg_bot.settings import BASE_DIR
 import os
 
 
 def resize_image(image, size=(200, 200)):
-    """
-    Изменяет размер изображения до заданного размера.
-
-    Параметры:
-    - image: объект PIL.Image.
-    - size: кортеж (ширина, высота), до которых нужно изменить изображение.
-    """
     return image.resize(size, Image.Resampling.LANCZOS)
 
 
@@ -27,22 +22,6 @@ def overlay_on_background(
     discount_rotation=0,
     price_rotation=0,
 ):
-    """
-    Накладывает изображение с прозрачным фоном на PNG-фон, добавляет текст скидки и цены,
-    и позволяет поворачивать текст скидки и цены.
-
-    Параметры:
-    - foreground_image: изображение, которое накладывается на фон.
-    - background_image_path: путь к фоновому изображению.
-    - position: позиция, где размещается foreground (по умолчанию (0, 0)).
-    - output_path: путь для сохранения результата.
-    - discount_percentage: процент скидки (число).
-    - price_text: текст цены (например, "€19.99").
-    - discount_position: координаты для текста скидки.
-    - price_position: координаты для текста цены.
-    - discount_rotation: угол поворота текста скидки (в градусах).
-    - price_rotation: угол поворота текста цены (в градусах).
-    """
     background = Image.open(background_image_path).convert("RGBA")
 
     background.paste(foreground_image, position, foreground_image)
@@ -99,24 +78,31 @@ def process_image(url: str, discounted_price, discount_percentage):
 
     foreground = Image.open(os.path.join(BASE_DIR, "main_app", "utils", "img_processing", "amazon_image.png")).convert("RGBA")
 
-
     foreground_resized = resize_image(foreground, size=(500, 600))
 
     price_text = f"{discounted_price:.2f}"
 
 
-    discount_position = (910, 217)
-    price_position = (895, 468)
+    if discount_percentage:
+        discount_position = (910, 217)
+        price_position = (895, 468)
+        discount_rotation = 5
+        price_rotation = 5
+        background = os.path.join(BASE_DIR, "main_app", "utils", "img_processing", "background.png")
+    else:
+        discount_position = (910, 217)
+        price_position = (910, 535)
+        discount_rotation = 5
+        price_rotation = 5
+        background = os.path.join(BASE_DIR, "main_app", "utils", "img_processing", "background_sale.png")
 
 
-    discount_rotation = 5
-    price_rotation = 5
 
     output_path = f"./storage/output_{url.split('/')[-1].split('.')[0]}.png"
 
     overlay_on_background(
         foreground_resized,
-        background_image_path=os.path.join(BASE_DIR, "main_app", "utils", "img_processing", "background.png"),
+        background_image_path=background,
         position=(290, 120),
         output_path=output_path,
         discount_percentage=discount_percentage,

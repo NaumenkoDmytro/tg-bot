@@ -6,24 +6,34 @@ from main_app.models import TelegramBotConfig
 
 class InfoBot:
 
-    def __init__(self, api_token: str, chanel_id: str, is_bot_enable: bool = False):
+    def __init__(self, api_token: str,
+                 chanel_id: str,
+                 chanel_name: str,
+                 chanel_link: str,
+                 is_bot_enable: bool = False,
+                 ):
         self.__IS_BOT_ENABLE = is_bot_enable
         self.__API_TOKEN = api_token
         self.__CHANEL_ID = chanel_id
+        self.chanel_name = chanel_name
+        self.chanel_link = chanel_link
 
     @staticmethod
     def __send_message(api_token: str, data = None, files=None):
-        url = f"https://api.telegram.org/bot{api_token}/sendPhoto"
+        url = f"https://api.telegram.org/bot{api_token}/sendPhoto?parse_mode=markdown"
         print(requests.post(url=url, data=data, files=files))
 
     def send_message(self, data: dict):
-        msg = f"""{data['title']}\n\n{data['product_link']}"""
+        msg = (f"{data['title']}\n\n"
+        f"🔗 {data['product_link']}\n\n"
+        f"📩 [{self.chanel_name}]({self.chanel_link})"
+        )
 
         if 'image_path' in data and data['image_path']:
             with open(data['image_path'], 'rb') as image_file:
                 payload = {
                     'chat_id': self.__CHANEL_ID,
-                    'caption': msg,
+                    'caption': msg
                 }
                 files = {
                     'photo': image_file,
@@ -49,7 +59,9 @@ def init_telegram_bots(bot_credentials) -> List[InfoBot]:
                 if bot.is_enabled:
                     telegram_info_bots.append(InfoBot(api_token=bot.bot_api_token,
                                                       chanel_id=bot.channel_id,
-                                                      is_bot_enable=bot.is_enabled)
+                                                      is_bot_enable=bot.is_enabled,
+                                                      chanel_name=bot.channel_name,
+                                                      chanel_link=bot.channel_link,)
                                               )
         except ValueError as ex:
             print(f"error: {ex}")

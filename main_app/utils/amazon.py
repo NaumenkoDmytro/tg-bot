@@ -22,8 +22,19 @@ class Amazon:
     def get_items(self, asins: List[str]):
         return self.__amazon.get_items(asins)
 
-    def search_items(self, keywords: str, min_price:int, max_price:int, item_count: int):
-        return self.__amazon.search_items(keywords=keywords,
-                                          min_price=min_price,
-                                          max_price=max_price,
-                                          item_count=item_count)
+    def search_items(self,
+                     keywords: str,
+                     min_price:int,
+                     max_price:int,
+                     item_count: int,
+                     min_saving_percent: int,
+                     min_reviews_rating: int):
+        try:
+            return self.__amazon.search_items(keywords=keywords,
+                                              min_price=min_price,
+                                              max_price=max_price,
+                                              item_count=item_count,
+                                              min_saving_percent=min_saving_percent if min_saving_percent > 0 else None,
+                                              min_reviews_rating=min_reviews_rating)
+        except Exception as e:
+            print(f"Error: {e}")

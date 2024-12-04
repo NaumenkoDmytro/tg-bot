@@ -44,10 +44,22 @@ class AmazonAutoTaskModelForm(forms.ModelForm):
             raise forms.ValidationError('Value must be between 1 and 10.')
         return value
 
+    def clean_min_saving_percent(self):
+        value = self.cleaned_data['min_saving_percent']
+        if value > 100:
+            raise forms.ValidationError('Value must be less then 100.')
+        return value
+
+    def clean_min_reviews_rating(self):
+        value = self.cleaned_data['min_reviews_rating']
+        if value > 5:
+            raise forms.ValidationError('Value must be less then 5.')
+        return value
+
 @admin.register(AmazonAutomationTask)
 class AmazonAutoTaskAdmin(admin.ModelAdmin):
     form = AmazonAutoTaskModelForm
-    list_display = ('name', 'status', 'start_time')
+    list_display = ('name', 'status', 'keywords', 'start_time')
 
 
 @admin.register(TelegramBotConfig)

@@ -1,8 +1,8 @@
 Django==4.2.4
 django-environ==0.11.2
-python-telegram-bot==20.6
 psycopg2==2.9.7
 python-amazon-paapi==5.0.1
 apscheduler==3.10.4
 requests
 Pillow==11.0.0
+googletrans==4.0.0-rc1
