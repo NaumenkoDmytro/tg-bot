@@ -37,7 +37,7 @@ def overlay_on_background(
             font_price = ImageFont.load_default()
 
         if discount_percentage:
-            discount_text = f"{int(discount_percentage)}%"
+            discount_text = f"{int(discount_percentage)}% OFF"
             temp_image_discount = Image.new("RGBA", (300, 100), (255, 255, 255, 0))
             temp_draw_discount = ImageDraw.Draw(temp_image_discount)
             temp_draw_discount.text(
@@ -51,7 +51,7 @@ def overlay_on_background(
             background.paste(rotated_discount, discount_position, rotated_discount)
 
         if price_text:
-            price_text_formatted = f"{price_text}"
+            price_text_formatted = f"{price_text}€"
 
             temp_image_price = Image.new("RGBA", (300, 100), (255, 255, 255, 0))
             temp_draw_price = ImageDraw.Draw(temp_image_price)
@@ -84,13 +84,13 @@ def process_image(url: str, discounted_price, discount_percentage):
 
 
     if discount_percentage:
-        discount_position = (910, 217)
-        price_position = (895, 468)
+        discount_position = (891, 262)
+        price_position = (901, 535)
         discount_rotation = 5
         price_rotation = 5
         background = os.path.join(BASE_DIR, "main_app", "utils", "img_processing", "background.png")
     else:
-        discount_position = (910, 217)
+        discount_position = (910, 232)
         price_position = (910, 535)
         discount_rotation = 5
         price_rotation = 5
