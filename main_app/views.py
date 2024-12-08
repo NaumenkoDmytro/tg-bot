@@ -5,6 +5,7 @@ from .models import AmazonAutomationTask
 from .utils.img_processing.image_processor import process_image
 from .utils.amazon_shorten_link import AmazonShortenLink
 from .utils.translator import translate
+from .utils.randomize_response import shuffle_and_return
 import os
 from tg_bot import settings
 
@@ -26,14 +27,22 @@ def index(request):
                                          associate_tag=task.amazon_api.partner_tag)
 
         try:
-            items = amazon.search_items(keywords=task.keywords,
-                                        min_price=task.min_price,
-                                        max_price=task.max_price,
-                                        item_count=task.num_items,
-                                        min_reviews_rating=task.min_reviews_rating,
-                                        min_saving_percent=task.min_saving_percent).items
+            i = 1
+            items = []
 
-            print(items)
+            while i <= 10:
+                items.extend(amazon.search_items(keywords=task.keywords,
+                                                 min_price=task.min_price,
+                                                 max_price=task.max_price,
+                                                 item_count=task.num_items,
+                                                 min_reviews_rating=task.min_reviews_rating,
+                                                 min_saving_percent=task.min_saving_percent,
+                                                 item_page=i).items)
+                i += 1
+
+            print(len(items))
+
+            items = shuffle_and_return(items, task.num_items)
 
             for item in items:
                 price = item.offers.listings[0].price.amount

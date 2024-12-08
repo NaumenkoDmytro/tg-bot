@@ -108,9 +108,6 @@ class AmazonManualTask(models.Model):
     asins = models.JSONField(_('Amazon Products Asins'),
                              default=list,
                              help_text='The field must be empty, for example: [] or contain a list of ASIN\'s in the following JSON format: ["ASIN", "ASIN"].')
-    start_time = models.DateTimeField(_('Start Time'),
-                                      default=timezone.now)
-
     amazon_api = models.ForeignKey(
         AmazonApi,
         on_delete=models.CASCADE,

@@ -28,13 +28,15 @@ class Amazon:
                      max_price:int,
                      item_count: int,
                      min_saving_percent: int,
-                     min_reviews_rating: int):
+                     min_reviews_rating: int,
+                     item_page: int = 10):
         try:
             return self.__amazon.search_items(keywords=keywords,
                                               min_price=min_price,
                                               max_price=max_price,
                                               item_count=item_count,
                                               min_saving_percent=min_saving_percent if min_saving_percent > 0 else None,
-                                              min_reviews_rating=min_reviews_rating)
+                                              min_reviews_rating=min_reviews_rating,
+                                              item_page=item_page)
         except Exception as e:
             print(f"Error: {e}")

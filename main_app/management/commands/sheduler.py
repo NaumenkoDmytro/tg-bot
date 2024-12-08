@@ -3,6 +3,7 @@ from apscheduler.triggers.cron import CronTrigger
 from django.core.management.base import BaseCommand
 from main_app.utils.cron_task import start_amazon_auto_task
 
+
 class Command(BaseCommand):
     def handle(self, *args, **options):
         print("Scheduler started")

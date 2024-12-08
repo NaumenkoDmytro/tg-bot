@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from .models import User, TelegramBotConfig, AliExpressApi, AmazonApi, AmazonManualTask, AmazonAutomationTask
-
+from .utils.amazon_manual_task_process import amazon_manual_process
 admin.site.register(User)
 
 
@@ -28,10 +28,16 @@ class AmazonManualTaskModelForm(forms.ModelForm):
         return asins
 
 
-# @admin.register(AmazonManualTask)
-# class AmazonManualTaskAdmin(admin.ModelAdmin):
-#     form = AmazonManualTaskModelForm
-#     list_display = ('name', 'status', 'start_time')
+@admin.register(AmazonManualTask)
+class AmazonManualTaskAdmin(admin.ModelAdmin):
+    form = AmazonManualTaskModelForm
+    list_display = ('name', 'status')
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
+        amazon_manual_process(obj)
+
 
 class AmazonAutoTaskModelForm(forms.ModelForm):
     class Meta:
