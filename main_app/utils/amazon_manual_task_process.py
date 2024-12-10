@@ -1,6 +1,6 @@
 from main_app.utils.amazon import Amazon
 from .telegram_bot import init_telegram_bots
-from main_app.models import AmazonManualTask
+from main_app.models import AmazonManualTask, TelegramTestBotConfig
 from .img_processing.image_processor import process_image
 from .translator import translate
 import os
@@ -27,15 +27,21 @@ def amazon_manual_process(obj: AmazonManualTask):
             result.append(it)
 
             bots = init_telegram_bots(obj.bot.all())
+            test_bot = init_telegram_bots(TelegramTestBotConfig.objects.all())[0]
 
-            for bot in bots:
+            if obj.status == 'New':
                 for res in result:
-                    bot.send_message(res)
+                    res["title"] = "TEST\n\n" + res["title"]
+                    test_bot.send_message(res)
+            elif obj.status == 'Approved':
+                for bot in bots:
+                    for res in result:
+                        bot.send_message(res)
+                obj.status = 'Done'
+                obj.save()
+
     except Exception as e:
         print(f"Error: {e}")
-
-    obj.status = 'Done'
-    obj.save()
 
     directory = f"{settings.BASE_DIR}/storage/"
     for file in os.listdir(directory):

@@ -20,20 +20,42 @@ class InfoBot:
 
     @staticmethod
     def __send_message(api_token: str, data = None, files=None):
-        url = f"https://api.telegram.org/bot{api_token}/sendPhoto?parse_mode=markdown"
+        url = f"https://api.telegram.org/bot{api_token}/sendPhoto"
         print(requests.post(url=url, data=data, files=files))
+
+    @staticmethod
+    def __send_message_video(api_token: str, data=None, files=None):
+        url = f"https://api.telegram.org/bot{api_token}/sendVideo"
+        print(requests.post(url=url, data=data, files=files))
+
+    def send_video(self, data: dict):
+        msg = (f"{data['title']}\n\n"
+               f"💶 Preço: {data['price']}€\n\n"
+               f"🔗 <a href='{data['product_link']}'>Link do produto</a>\n\n"
+               f"📩 <a href='{self.chanel_link}'>{self.chanel_name}</a>"
+               )
+
+        payload = {
+            'chat_id': self.__CHANEL_ID,
+            'caption': msg,
+            'video': data['video_url'],
+            'parse_mode': 'HTML'
+        }
+        self.__send_message_video(api_token=self.__API_TOKEN, data=payload)
+        print("Message sent")
 
     def send_message(self, data: dict):
         msg = (f"{data['title']}\n\n"
-        f"🔗 {data['product_link']}\n\n"
-        f"📩 [{self.chanel_name}]({self.chanel_link})"
+        f"🔗 <a href='{data['product_link']}'>Link do produto</a>\n\n"
+        f"📩 <a href='{self.chanel_link}'>{self.chanel_name}</a>"
         )
 
         if 'image_path' in data and data['image_path']:
             with open(data['image_path'], 'rb') as image_file:
                 payload = {
                     'chat_id': self.__CHANEL_ID,
-                    'caption': msg
+                    'caption': msg,
+                    'parse_mode': 'HTML'
                 }
                 files = {
                     'photo': image_file,
@@ -45,6 +67,7 @@ class InfoBot:
                 'chat_id': self.__CHANEL_ID,
                 'caption': msg,
                 'photo': data['image'],
+                'parse_mode': 'markdown'
             }
             self.__send_message(api_token=self.__API_TOKEN, data=payload)
         print("Message sent")
