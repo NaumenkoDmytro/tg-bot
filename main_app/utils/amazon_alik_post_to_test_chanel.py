@@ -11,6 +11,7 @@ from .randomize_response import shuffle_and_return
 from .aliexpress import AliExpress
 import os
 from tg_bot import settings
+from time import sleep
 
 
 def amazon(obj: AmazonAutomationTask):
@@ -77,26 +78,48 @@ def amazon(obj: AmazonAutomationTask):
 
 def alik(obj: AliExpressAutomationTask):
     if obj.status == "New":
-        res = []
         result = []
         aliexpress = AliExpress(app_key=obj.aliexpress_api.app_key,
                                 secret_key=obj.aliexpress_api.secret_key,
                                 tracking_id=obj.aliexpress_api.tracking_id)
 
         try:
+            curr_page_no = 0
+
             items = aliexpress.get_products(key_words=obj.keywords,
                                             min_price=obj.min_price,
                                             max_price=obj.max_price,
-                                            delivery_days=obj.delivery_days, )
-            pprint(items.products[0])
-            for item in items.products:
-                result.append({"title": item.product_title,
-                                   "product_link": item.product_detail_url,
-                                   "video_url": item.product_video_url if item.product_video_url != '' else None,
-                                   "price": item.target_sale_price})
-            res.extend(result)
+                                            delivery_days=obj.delivery_days,
+                                            page_no=curr_page_no,)
 
-            result = shuffle_and_return(result, obj.num_items)
+            curr_rec_num = items.current_record_count
+            total_rec_num = items.total_record_count
+
+            while curr_rec_num <= total_rec_num:
+                pprint(items)
+                for item in items.products:
+                    if item.product_video_url != '':
+                        result.append({"title": item.product_title,
+                                       "product_link": item.product_detail_url,
+                                       "video_url": item.product_video_url,
+                                       "price": item.target_sale_price})
+                print(len(result))
+
+                result = list({item['title']: item for item in result}.values())
+
+                if len(result) <= obj.num_items * 10:
+                    curr_page_no += 1
+                    items = aliexpress.get_products(key_words=obj.keywords,
+                                                    min_price=obj.min_price,
+                                                    max_price=obj.max_price,
+                                                    delivery_days=obj.delivery_days,
+                                                    page_no=curr_page_no, )
+                    curr_rec_num += items.current_record_count
+                    pprint(items)
+                else:
+                    break
+
+            result = shuffle_and_return(result, obj.num_items) if len(result) >= obj.num_items else result
 
             test_bot = init_telegram_bots(TelegramTestBotConfig.objects.all())[0]
 
@@ -104,5 +127,6 @@ def alik(obj: AliExpressAutomationTask):
                 if res["video_url"] is not None:
                     res["title"] = "TEST\n\n" + res["title"]
                     test_bot.send_video(res)
+                    sleep(5)
         except Exception as e:
             print(f"Error: {e}")

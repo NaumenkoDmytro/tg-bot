@@ -84,29 +84,53 @@ def start_aliexpress_auto_task():
     tasks = AliExpressAutomationTask.objects.filter(status='Approved',
                                                     start_time__gte=timezone.now() - timedelta(hours=2),
                                                     start_time__lte=timezone.now())
-    res = []
+    result = []
 
     for task in tasks:
-        result = []
 
         aliexpress = AliExpress(app_key=task.aliexpress_api.app_key,
                                 secret_key=task.aliexpress_api.secret_key,
                                 tracking_id=task.aliexpress_api.tracking_id)
 
         try:
+            curr_page_no = 0
+
             items = aliexpress.get_products(key_words=task.keywords,
                                             min_price=task.min_price,
                                             max_price=task.max_price,
-                                            delivery_days=task.delivery_days, )
-            for item in items.products:
-                result.append({"title": item.product_title,
-                               "product_link": item.product_detail_url,
-                               "video_url": item.product_video_url if item.product_video_url != '' else None,
-                               "price": item.target_sale_price})
-            res.extend(result)
-            bots = init_telegram_bots(task.bot.all())
+                                            delivery_days=task.delivery_days,
+                                            page_no=curr_page_no, )
 
-            result = shuffle_and_return(result, task.num_items)
+            curr_rec_num = items.current_record_count
+            total_rec_num = items.total_record_count
+
+            while curr_rec_num <= total_rec_num:
+                pprint.pprint(items)
+                for item in items.products:
+                    if item.product_video_url != '':
+                        result.append({"title": item.product_title,
+                                       "product_link": item.product_detail_url,
+                                       "video_url": item.product_video_url,
+                                       "price": item.target_sale_price})
+                print(len(result))
+
+                result = list({item['title']: item for item in result}.values())
+
+                if len(result) <= task.num_items * 10:
+                    curr_page_no += 1
+                    items = aliexpress.get_products(key_words=task.keywords,
+                                                    min_price=task.min_price,
+                                                    max_price=task.max_price,
+                                                    delivery_days=task.delivery_days,
+                                                    page_no=curr_page_no, )
+                    curr_rec_num += items.current_record_count
+                    pprint.pprint(items)
+                else:
+                    break
+
+            result = shuffle_and_return(result, task.num_items) if len(result) >= task.num_items else result
+
+            bots = init_telegram_bots(task.bot.all())
 
             for bot in bots:
                 for res in result:
