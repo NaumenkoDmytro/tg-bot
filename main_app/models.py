@@ -193,6 +193,16 @@ class AmazonAutomationTask(models.Model):
         return f'{self.name}'
 
 
+class AmazonSavedProducts(models.Model):
+    image = models.CharField()
+    image_path = models.CharField()
+    product_link = models.CharField()
+    title = models.CharField()
+    task = models.ForeignKey(AmazonAutomationTask,
+                             on_delete=models.CASCADE,
+                             related_name='saved_products')
+
+
 class AliExpressManualTask(models.Model):
     class Meta:
         verbose_name = 'AliExpress Manual Task'

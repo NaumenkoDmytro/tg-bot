@@ -44,10 +44,10 @@ def amazon_manual_process(obj: AmazonManualTask):
         print(f"Error: {e}")
 
     directory = f"{settings.BASE_DIR}/storage/"
-    for file in os.listdir(directory):
-        if file.endswith(".png"):
-            file_path = os.path.join(directory, file)
-            os.remove(file_path)
-            print(f"Deleted: {file_path}")
+
+    for item in result:
+        file_path = os.path.join(directory, item["image_path"].split("/")[-1])
+        os.remove(file_path)
+        print(f"Deleted: {file_path}")
 
     print("Manual Task finished.")

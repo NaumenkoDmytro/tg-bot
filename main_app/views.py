@@ -1,9 +1,10 @@
+from copy import deepcopy
 from pprint import pprint
 from django.db.models import Q
 from django.http import JsonResponse
 from main_app.utils.amazon import Amazon
 from .utils.telegram_bot import init_telegram_bots
-from .models import AmazonAutomationTask, AliExpressAutomationTask, TelegramTestBotConfig
+from .models import AmazonAutomationTask, AliExpressAutomationTask, TelegramTestBotConfig, AmazonSavedProducts
 from .utils.img_processing.image_processor import process_image
 from .utils.amazon_shorten_link import AmazonShortenLink
 from .utils.translator import translate
@@ -19,70 +20,97 @@ from time import sleep
 def amazon(request):
     tasks = AmazonAutomationTask.objects.filter(Q(status='New') | Q(status='Approved'))
     res = []
+    directory = f"{settings.BASE_DIR}/storage/"
 
+    print("start")
     for task in tasks:
-        result = []
-        amazon = Amazon(access_key=task.amazon_api.access_key,
-                        secret_key=task.amazon_api.secret_key,
-                        associate_tag=task.amazon_api.partner_tag)
+        bots = init_telegram_bots(task.bot.all())
 
-        amazon_short = AmazonShortenLink(access_key=task.amazon_api.access_key,
-                                         secret_key=task.amazon_api.secret_key,
-                                         associate_tag=task.amazon_api.partner_tag)
+        if task.status == 'New':
+            result = []
+            amazon = Amazon(access_key=task.amazon_api.access_key,
+                            secret_key=task.amazon_api.secret_key,
+                            associate_tag=task.amazon_api.partner_tag)
 
-        try:
-            i = 1
-            items = []
+            amazon_short = AmazonShortenLink(access_key=task.amazon_api.access_key,
+                                             secret_key=task.amazon_api.secret_key,
+                                             associate_tag=task.amazon_api.partner_tag)
 
-            while i <= 10:
-                items.extend(amazon.search_items(keywords=task.keywords,
-                                                 min_price=task.min_price,
-                                                 max_price=task.max_price,
-                                                 item_count=task.num_items,
-                                                 min_reviews_rating=task.min_reviews_rating,
-                                                 min_saving_percent=task.min_saving_percent,
-                                                 item_page=i).items)
-                i += 1
+            try:
+                i = 1
+                items = []
 
-            print(len(items))
+                while i <= 10:
+                    print(i)
+                    items.extend(amazon.search_items(keywords=task.keywords,
+                                                     min_price=task.min_price,
+                                                     max_price=task.max_price,
+                                                     item_count=task.num_items,
+                                                     min_reviews_rating=task.min_reviews_rating,
+                                                     min_saving_percent=task.min_saving_percent,
+                                                     item_page=i).items)
+                    i += 1
 
-            items = shuffle_and_return(items, task.num_items)
-            print(items[0])
+                print(len(items))
 
-            for item in items:
-                price = item.offers.listings[0].price.amount
-                discount = item.offers.listings[0].price.savings.percentage if item.offers.listings[
-                    0].price.savings else None
+                items = shuffle_and_return(items, task.num_items)
+                print(items[0])
 
-                it = {"image": item.images.primary.large.url,
-                      "image_path": process_image(item.images.primary.large.url, price, discount),
-                      "product_link": amazon_short.shorten_amazon_link(
-                          original_url=f"{item.detail_page_url}?language=pt_PT"),
-                      "title": translate(item.item_info.title.display_value).text,}
-                result.append(it)
+                for item in items:
+                    price = item.offers.listings[0].price.amount
+                    discount = item.offers.listings[0].price.savings.percentage if item.offers.listings[
+                        0].price.savings else None
 
-            res.extend(result)
-            bots = init_telegram_bots(task.bot.all())
+                    it = {"image": item.images.primary.large.url,
+                          "image_path": process_image(item.images.primary.large.url, price, discount),
+                          "product_link": amazon_short.shorten_amazon_link(
+                              original_url=f"{item.detail_page_url}?language=pt_PT"),
+                          "title": translate(item.item_info.title.display_value).text,}
+                    result.append(it)
 
-            test_bot = init_telegram_bots(TelegramTestBotConfig.objects.all())[0]
+                res.extend(result)
 
-            if task.status == 'New':
+                test_bot = init_telegram_bots(TelegramTestBotConfig.objects.all())[0]
+
+                existed_saved_products = AmazonSavedProducts.objects.filter(task=task)
+
+                if existed_saved_products:
+                    for product in existed_saved_products:
+                        file_path = os.path.join(directory, product.image_path.split("/")[-1])
+                        os.remove(file_path)
+                        print(f"Exist image deleted: {file_path}")
+                        product.delete()
+
                 for res in result:
+                    saved_product = AmazonSavedProducts.objects.create(image=res["image"],
+                                                                       image_path=res["image_path"],
+                                                                       product_link=res["product_link"],
+                                                                       title=res["title"],
+                                                                       task=task, )
+                    saved_product.save()
+
                     res["title"] = "TEST\n\n" + res["title"]
                     test_bot.send_message(res)
-            elif task.status == 'Approved':
-                for bot in bots:
-                    for res in result:
-                        bot.send_message(res)
-                task.status = 'Done'
-                task.save()
-        except Exception as e:
-            print(f"Error: {e}")
+            except Exception as e:
+                print(f"Error: {e}")
+        elif task.status == 'Approved':
+            saved_products_send = AmazonSavedProducts.objects.filter(task=task)
 
-        directory = f"{settings.BASE_DIR}/storage/"
-        for file in os.listdir(directory):
-            if file.endswith(".png"):
-                file_path = os.path.join(directory, file)
+            data = [{"image": item.image,
+                     "image_path": item.image_path,
+                     "product_link": item.image_path,
+                     "title": item.title,}
+                    for item in saved_products_send]
+            res = data
+
+            for bot in bots:
+                for res in data:
+                    bot.send_message(res)
+            task.status = 'Done'
+            task.save()
+
+            for item in data:
+                file_path = os.path.join(directory, item["image_path"].split("/")[-1])
                 os.remove(file_path)
                 print(f"Deleted: {file_path}")
 
@@ -112,6 +140,7 @@ def alik(request):
 
             while curr_rec_num <= total_rec_num:
                 pprint(items)
+                sleep(5)
                 for item in items.products:
                     if item.product_video_url != '':
                         result.append({"title": item.product_title,

@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from main_app.utils.amazon import Amazon
 from .telegram_bot import init_telegram_bots
-from main_app.models import AmazonAutomationTask, AliExpressAutomationTask, TelegramTestBotConfig
+from main_app.models import AmazonAutomationTask, AliExpressAutomationTask, TelegramTestBotConfig, AmazonSavedProducts
 from .img_processing.image_processor import process_image
 from .amazon_shorten_link import AmazonShortenLink
 from .translator import translate
@@ -16,6 +16,7 @@ from time import sleep
 
 def amazon(obj: AmazonAutomationTask):
     if obj.status == "New":
+        directory = f"{settings.BASE_DIR}/storage/"
         res = []
 
         result = []
@@ -62,18 +63,28 @@ def amazon(obj: AmazonAutomationTask):
 
             test_bot = init_telegram_bots(TelegramTestBotConfig.objects.all())[0]
 
+            existed_saved_products = AmazonSavedProducts.objects.filter(task=obj)
+
+            if existed_saved_products:
+                for product in existed_saved_products:
+                    file_path = os.path.join(directory, product.image_path.split("/")[-1])
+                    os.remove(file_path)
+                    print(f"Exist image deleted: {file_path}")
+                    product.delete()
+
             for res in result:
+                saved_product = AmazonSavedProducts.objects.create(image=res["image"],
+                                                                   image_path=res["image_path"],
+                                                                   product_link=res["product_link"],
+                                                                   title=res["title"],
+                                                                   task=obj, )
+                saved_product.save()
+
                 res["title"] = "TEST\n\n" + res["title"]
                 test_bot.send_message(res)
         except Exception as e:
             print(f"Error: {e}")
 
-        directory = f"{settings.BASE_DIR}/storage/"
-        for file in os.listdir(directory):
-            if file.endswith(".png"):
-                file_path = os.path.join(directory, file)
-                os.remove(file_path)
-                print(f"Deleted: {file_path}")
 
 
 def alik(obj: AliExpressAutomationTask):
@@ -97,6 +108,7 @@ def alik(obj: AliExpressAutomationTask):
 
             while curr_rec_num <= total_rec_num:
                 pprint(items)
+                sleep(2)
                 for item in items.products:
                     if item.product_video_url != '':
                         result.append({"title": item.product_title,

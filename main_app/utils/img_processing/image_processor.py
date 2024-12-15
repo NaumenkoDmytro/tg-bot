@@ -4,6 +4,7 @@ from django.utils.termcolors import background
 
 from tg_bot.settings import BASE_DIR
 import os
+import uuid
 
 
 def resize_image(image, size=(200, 200)):
@@ -96,9 +97,8 @@ def process_image(url: str, discounted_price, discount_percentage):
         price_rotation = 5
         background = os.path.join(BASE_DIR, "main_app", "utils", "img_processing", "background_sale.png")
 
-
-
-    output_path = f"./storage/output_{url.split('/')[-1].split('.')[0]}.png"
+    unique_id = uuid.uuid4()
+    output_path = f"./storage/output_{str(unique_id)}.png"
 
     overlay_on_background(
         foreground_resized,

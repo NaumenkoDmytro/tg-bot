@@ -1,7 +1,9 @@
+from time import sleep
+
 from main_app.utils.amazon import Amazon
 from main_app.utils.aliexpress import AliExpress
 from .telegram_bot import init_telegram_bots
-from main_app.models import AmazonAutomationTask, AliExpressAutomationTask
+from main_app.models import AmazonAutomationTask, AliExpressAutomationTask, AmazonSavedProducts
 from django.utils import timezone
 from datetime import timedelta
 from .amazon_shorten_link import AmazonShortenLink
@@ -18,66 +20,35 @@ def start_amazon_auto_task():
                                                 start_time__gte=timezone.now() - timedelta(hours=2),
                                                 start_time__lte=timezone.now())
     print(tasks)
-    res = []
+    directory = f"{settings.BASE_DIR}/storage/"
 
     for task in tasks:
-        result = []
-        amazon = Amazon(access_key=task.amazon_api.access_key,
-                        secret_key=task.amazon_api.secret_key,
-                        associate_tag=task.amazon_api.partner_tag)
-
-        amazon_short = AmazonShortenLink(access_key=task.amazon_api.access_key,
-                                         secret_key=task.amazon_api.secret_key,
-                                         associate_tag=task.amazon_api.partner_tag)
-
         try:
-            i = 1
-            items = []
+            saved_products_send = AmazonSavedProducts.objects.filter(task=task)
 
-            while i <= 10:
-                items.extend(amazon.search_items(keywords=task.keywords,
-                                                 min_price=task.min_price,
-                                                 max_price=task.max_price,
-                                                 item_count=task.num_items,
-                                                 min_reviews_rating=task.min_reviews_rating,
-                                                 min_saving_percent=task.min_saving_percent,
-                                                 item_page=i).items)
-                i += 1
+            data = [{"image": item.image,
+                     "image_path": item.image_path,
+                     "product_link": item.image_path,
+                     "title": item.title,}
+                    for item in saved_products_send]
 
-            print(len(items))
-
-            items = shuffle_and_return(items, task.num_items)
-
-            for item in items:
-                price = item.offers.listings[0].price.amount
-                discount = item.offers.listings[0].price.savings.percentage if item.offers.listings[
-                    0].price.savings else None
-
-                it = {"image": item.images.primary.large.url,
-                      "image_path": process_image(item.images.primary.large.url, price, discount),
-                      "product_link": amazon_short.shorten_amazon_link(
-                          original_url=f"{item.detail_page_url}?language=pt_PT"),
-                      "title": translate(item.item_info.title.display_value).text}
-                result.append(it)
-
-            res.extend(result)
             bots = init_telegram_bots(task.bot.all())
 
             for bot in bots:
-                for res in result:
+                for res in data:
                     bot.send_message(res)
-        except Exception as e:
-            print(f"Error Amazon: {e}")
+            task.status = 'Done'
+            task.save()
 
-        task.status = 'Done'
-        task.save()
+            for product in saved_products_send:
+                product.delete()
 
-        directory = f"{settings.BASE_DIR}/storage/"
-        for file in os.listdir(directory):
-            if file.endswith(".png"):
-                file_path = os.path.join(directory, file)
+            for item in data:
+                file_path = os.path.join(directory, item["image_path"].split("/")[-1])
                 os.remove(file_path)
                 print(f"Deleted: {file_path}")
+        except Exception as e:
+            print(f"Error Amazon: {e}")
 
 
 def start_aliexpress_auto_task():
@@ -106,6 +77,7 @@ def start_aliexpress_auto_task():
 
             while curr_rec_num <= total_rec_num:
                 pprint.pprint(items)
+                sleep(2)
                 for item in items.products:
                     if item.product_video_url != '':
                         result.append({"title": item.product_title,
