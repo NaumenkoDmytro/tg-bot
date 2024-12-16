@@ -255,6 +255,14 @@ class AliExpressAutomationTask(models.Model):
     delivery_days = models.PositiveSmallIntegerField(_('Delivery Days'),
                                                     default=0,
                                                     validators=[MaxValueValidator(100)],)
+    min_saving_percent = models.PositiveSmallIntegerField(_('Min Savings Percent'),
+                                                          help_text="Filters search results to items with at least one offer having saving percentage above the specified value.",
+                                                          default=0,
+                                                          validators=[MaxValueValidator(100)], )
+    min_reviews_rating = models.PositiveSmallIntegerField(_('Min Reviews Rating'),
+                                                          help_text="Filters search results to items with customer review ratings above specified value.",
+                                                          default=4,
+                                                          validators=[MaxValueValidator(5)], )
     start_time = models.DateTimeField(_('Start Time'),
                                       default=timezone.now)
 

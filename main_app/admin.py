@@ -120,6 +120,18 @@ class AliExpressAutoTaskModelForm(forms.ModelForm):
             raise forms.ValidationError('Value must be less then 100.')
         return value
 
+    def clean_min_saving_percent(self):
+        value = self.cleaned_data['min_saving_percent']
+        if value > 100:
+            raise forms.ValidationError('Value must be less then 100.')
+        return value
+
+    def clean_min_reviews_rating(self):
+        value = self.cleaned_data['min_reviews_rating']
+        if value > 5:
+            raise forms.ValidationError('Value must be less then 5.')
+        return value
+
 
 @admin.register(AliExpressAutomationTask)
 class AliExpressAutoTaskAdmin(admin.ModelAdmin):
