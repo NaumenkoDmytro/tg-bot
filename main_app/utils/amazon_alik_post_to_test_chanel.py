@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from main_app.utils.amazon import Amazon
 from .telegram_bot import init_telegram_bots
-from main_app.models import AmazonAutomationTask, AliExpressAutomationTask, TelegramTestBotConfig, AmazonSavedProducts
+from main_app.models import AmazonAutomationTask, AliExpressAutomationTask, TelegramTestBotConfig, AmazonSavedProducts, AliExpressSavedProducts
 from .img_processing.image_processor import process_image
 from .amazon_shorten_link import AmazonShortenLink
 from .translator import translate
@@ -101,14 +101,14 @@ def alik(obj: AliExpressAutomationTask):
                                             min_price=obj.min_price,
                                             max_price=obj.max_price,
                                             delivery_days=obj.delivery_days,
-                                            page_no=curr_page_no,)
+                                            page_no=curr_page_no, )
 
             curr_rec_num = items.current_record_count
             total_rec_num = items.total_record_count
 
             while curr_rec_num <= total_rec_num:
                 pprint(items)
-                sleep(2)
+                sleep(5)
                 for item in items.products:
                     if item.product_video_url != '':
                         result.append({"title": item.product_title,
@@ -135,10 +135,22 @@ def alik(obj: AliExpressAutomationTask):
 
             test_bot = init_telegram_bots(TelegramTestBotConfig.objects.all())[0]
 
+            existed_saved_products = AliExpressSavedProducts.objects.filter(task=obj)
+
+            if existed_saved_products:
+                for product in existed_saved_products:
+                    product.delete()
+
             for res in result:
-                if res["video_url"] is not None:
-                    res["title"] = "TEST\n\n" + res["title"]
-                    test_bot.send_video(res)
-                    sleep(5)
+                saved_product = AliExpressSavedProducts.objects.create(title=res["title"],
+                                                                       product_link=res["product_link"],
+                                                                       video_url=res["video_url"],
+                                                                       price=res["price"],
+                                                                       task=obj, )
+                saved_product.save()
+
+                res["title"] = "TEST\n\n" + res["title"]
+                test_bot.send_video(res)
+                sleep(5)
         except Exception as e:
             print(f"Error: {e}")

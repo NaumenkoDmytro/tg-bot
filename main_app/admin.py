@@ -1,14 +1,15 @@
 from django.contrib import admin
 from django import forms
 from .models import (User, TelegramBotConfig, AliExpressApi, AmazonApi, AmazonManualTask, AmazonAutomationTask,
-                     AliExpressManualTask, AliExpressAutomationTask, TelegramTestBotConfig, AmazonSavedProducts)
+                     AliExpressManualTask, AliExpressAutomationTask, TelegramTestBotConfig, AmazonSavedProducts,
+                     AliExpressSavedProducts)
 from .utils.amazon_manual_task_process import amazon_manual_process
 from .utils.aliexpress_manual_task_process import ali_manual_process
 from .utils.amazon_alik_post_to_test_chanel import amazon, alik
 
 admin.site.register(User)
 # admin.site.register(AmazonSavedProducts)
-
+admin.site.register(AliExpressSavedProducts)
 
 class AmazonManualTaskModelForm(forms.ModelForm):
     class Meta:

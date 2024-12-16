@@ -3,7 +3,7 @@ from time import sleep
 from main_app.utils.amazon import Amazon
 from main_app.utils.aliexpress import AliExpress
 from .telegram_bot import init_telegram_bots
-from main_app.models import AmazonAutomationTask, AliExpressAutomationTask, AmazonSavedProducts
+from main_app.models import AmazonAutomationTask, AliExpressAutomationTask, AmazonSavedProducts, AliExpressSavedProducts
 from django.utils import timezone
 from datetime import timedelta
 from .amazon_shorten_link import AmazonShortenLink
@@ -55,62 +55,24 @@ def start_aliexpress_auto_task():
     tasks = AliExpressAutomationTask.objects.filter(status='Approved',
                                                     start_time__gte=timezone.now() - timedelta(hours=2),
                                                     start_time__lte=timezone.now())
-    result = []
 
     for task in tasks:
-
-        aliexpress = AliExpress(app_key=task.aliexpress_api.app_key,
-                                secret_key=task.aliexpress_api.secret_key,
-                                tracking_id=task.aliexpress_api.tracking_id)
+        bots = init_telegram_bots(task.bot.all())
 
         try:
-            curr_page_no = 0
+            saved_products_send = AliExpressSavedProducts.objects.filter(task=task)
 
-            items = aliexpress.get_products(key_words=task.keywords,
-                                            min_price=task.min_price,
-                                            max_price=task.max_price,
-                                            delivery_days=task.delivery_days,
-                                            page_no=curr_page_no, )
-
-            curr_rec_num = items.current_record_count
-            total_rec_num = items.total_record_count
-
-            while curr_rec_num <= total_rec_num:
-                pprint.pprint(items)
-                sleep(2)
-                for item in items.products:
-                    if item.product_video_url != '':
-                        result.append({"title": item.product_title,
-                                       "product_link": item.product_detail_url,
-                                       "video_url": item.product_video_url,
-                                       "price": item.target_sale_price})
-                print(len(result))
-
-                result = list({item['title']: item for item in result}.values())
-
-                if len(result) <= task.num_items * 10:
-                    curr_page_no += 1
-                    items = aliexpress.get_products(key_words=task.keywords,
-                                                    min_price=task.min_price,
-                                                    max_price=task.max_price,
-                                                    delivery_days=task.delivery_days,
-                                                    page_no=curr_page_no, )
-                    curr_rec_num += items.current_record_count
-                    pprint.pprint(items)
-                else:
-                    break
-
-            result = shuffle_and_return(result, task.num_items) if len(result) >= task.num_items else result
-
-            bots = init_telegram_bots(task.bot.all())
+            data = [{"title": item.title,
+                     "product_link": item.product_link,
+                     "video_url": item.video_url,
+                     "price": item.price, }
+                    for item in saved_products_send]
 
             for bot in bots:
-                for res in result:
-                    if res["video_url"] is not None:
-                        bot.send_video(res)
-
+                for res in data:
+                    bot.send_video(res)
+                    sleep(5)
+            task.status = 'Done'
+            task.save()
         except Exception as e:
             print(f"Error AliExpress: {e}")
-
-        task.status = 'Done'
-        task.save()

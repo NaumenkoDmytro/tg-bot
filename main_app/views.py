@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from main_app.utils.amazon import Amazon
 from .utils.telegram_bot import init_telegram_bots
-from .models import AmazonAutomationTask, AliExpressAutomationTask, TelegramTestBotConfig, AmazonSavedProducts
+from .models import AmazonAutomationTask, AliExpressAutomationTask, TelegramTestBotConfig, AmazonSavedProducts, AliExpressSavedProducts
 from .utils.img_processing.image_processor import process_image
 from .utils.amazon_shorten_link import AmazonShortenLink
 from .utils.translator import translate
@@ -122,68 +122,90 @@ def alik(request):
     result = []
 
     for task in tasks:
-        aliexpress = AliExpress(app_key=task.aliexpress_api.app_key,
-                                secret_key=task.aliexpress_api.secret_key,
-                                tracking_id=task.aliexpress_api.tracking_id)
+        bots = init_telegram_bots(task.bot.all())
 
-        try:
-            curr_page_no = 0
+        if task.status == 'New':
+            aliexpress = AliExpress(app_key=task.aliexpress_api.app_key,
+                                    secret_key=task.aliexpress_api.secret_key,
+                                    tracking_id=task.aliexpress_api.tracking_id)
 
-            items = aliexpress.get_products(key_words=task.keywords,
-                                            min_price=task.min_price,
-                                            max_price=task.max_price,
-                                            delivery_days=task.delivery_days,
-                                            page_no=curr_page_no,)
+            try:
+                curr_page_no = 0
 
-            curr_rec_num = items.current_record_count
-            total_rec_num = items.total_record_count
+                items = aliexpress.get_products(key_words=task.keywords,
+                                                min_price=task.min_price,
+                                                max_price=task.max_price,
+                                                delivery_days=task.delivery_days,
+                                                page_no=curr_page_no,)
 
-            while curr_rec_num <= total_rec_num:
-                pprint(items)
-                sleep(5)
-                for item in items.products:
-                    if item.product_video_url != '':
-                        result.append({"title": item.product_title,
-                                       "product_link": item.product_detail_url,
-                                       "video_url": item.product_video_url,
-                                       "price": item.target_sale_price})
-                print(len(result))
+                curr_rec_num = items.current_record_count
+                total_rec_num = items.total_record_count
 
-                result = list({item['title']: item for item in result}.values())
-
-                if len(result) <= task.num_items * 10:
-                    curr_page_no += 1
-                    items = aliexpress.get_products(key_words=task.keywords,
-                                                    min_price=task.min_price,
-                                                    max_price=task.max_price,
-                                                    delivery_days=task.delivery_days,
-                                                    page_no=curr_page_no,)
-                    curr_rec_num += items.current_record_count
+                while curr_rec_num <= total_rec_num:
                     pprint(items)
-                else:
-                    break
+                    sleep(5)
+                    for item in items.products:
+                        if item.product_video_url != '':
+                            result.append({"title": item.product_title,
+                                           "product_link": item.product_detail_url,
+                                           "video_url": item.product_video_url,
+                                           "price": item.target_sale_price})
+                    print(len(result))
 
-            result = shuffle_and_return(result, task.num_items) if len(result) >= task.num_items else result
+                    result = list({item['title']: item for item in result}.values())
 
-            bots = init_telegram_bots(task.bot.all())
+                    if len(result) <= task.num_items * 10:
+                        curr_page_no += 1
+                        items = aliexpress.get_products(key_words=task.keywords,
+                                                        min_price=task.min_price,
+                                                        max_price=task.max_price,
+                                                        delivery_days=task.delivery_days,
+                                                        page_no=curr_page_no,)
+                        curr_rec_num += items.current_record_count
+                        pprint(items)
+                    else:
+                        break
 
-            test_bot = init_telegram_bots(TelegramTestBotConfig.objects.all())[0]
+                result = shuffle_and_return(result, task.num_items) if len(result) >= task.num_items else result
 
-            if task.status == 'New':
+                test_bot = init_telegram_bots(TelegramTestBotConfig.objects.all())[0]
+
+                existed_saved_products = AliExpressSavedProducts.objects.filter(task=task)
+
+                if existed_saved_products:
+                    for product in existed_saved_products:
+                        product.delete()
+
                 for res in result:
-                    if res["video_url"] is not None:
-                        res["title"] = "TEST\n\n" + res["title"]
-                        test_bot.send_video(res)
-                        sleep(5)
-            elif task.status == 'Approved':
-                for bot in bots:
-                    for res in result:
-                        if res["video_url"] is not None:
-                            bot.send_video(res)
-                            sleep(5)
-                task.status = 'Done'
-                task.save()
-        except Exception as e:
-            print(f"Error: {e}")
+                    saved_product = AliExpressSavedProducts.objects.create(title=res["title"],
+                                                                           product_link=res["product_link"],
+                                                                           video_url=res["video_url"],
+                                                                           price=res["price"],
+                                                                           task=task, )
+                    saved_product.save()
+
+                    res["title"] = "TEST\n\n" + res["title"]
+                    test_bot.send_video(res)
+                    sleep(5)
+            except Exception as e:
+                print(f"Error: {e}")
+
+        elif task.status == 'Approved':
+            saved_products_send = AliExpressSavedProducts.objects.filter(task=task)
+
+            data = [{"title": item.title,
+                     "product_link": item.product_link,
+                     "video_url": item.video_url,
+                     "price": item.price,}
+                    for item in saved_products_send]
+
+            result = data
+
+            for bot in bots:
+                for res in data:
+                    bot.send_video(res)
+                    sleep(5)
+            task.status = 'Done'
+            task.save()
 
     return JsonResponse(result, safe=False)

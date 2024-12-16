@@ -269,3 +269,13 @@ class AliExpressAutomationTask(models.Model):
 
     def __str__(self):
         return f'{self.name}'
+
+
+class AliExpressSavedProducts(models.Model):
+    title = models.CharField()
+    product_link = models.CharField()
+    video_url = models.CharField()
+    price = models.CharField()
+    task = models.ForeignKey(AliExpressAutomationTask,
+                             on_delete=models.CASCADE,
+                             related_name='alik_saved_products')
