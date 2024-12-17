@@ -188,3 +188,4 @@ fabric.properties
 
 # DB
 db_data
+staticfiles/admin/

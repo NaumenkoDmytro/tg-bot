@@ -1,5 +1,6 @@
 from aliexpress_api import AliexpressApi, models
 from aliexpress_api.models.request_parameters import LinkType
+from time import sleep
 
 
 class AliExpress:
@@ -18,7 +19,20 @@ class AliExpress:
         )
 
     def get_items(self, product_keys: list):
-        return self.__aliexpress.get_products_details(product_keys)
+        res = []
+        for product_key in product_keys:
+            try:
+                res.extend(self.__aliexpress.get_products_details(product_key))
+            except Exception as e:
+                print(e)
+                sleep(10)
+                try:
+                    res.extend(self.__aliexpress.get_products_details(product_key))
+                except Exception as e:
+                    print(e)
+                    continue
+            sleep(10)
+        return res
 
     def get_products(self,
                      key_words: str,

@@ -9,7 +9,7 @@ from .utils.amazon_alik_post_to_test_chanel import amazon, alik
 
 admin.site.register(User)
 # admin.site.register(AmazonSavedProducts)
-admin.site.register(AliExpressSavedProducts)
+# admin.site.register(AliExpressSavedProducts)
 
 class AmazonManualTaskModelForm(forms.ModelForm):
     class Meta:

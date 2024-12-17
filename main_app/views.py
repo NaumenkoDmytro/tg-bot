@@ -98,7 +98,7 @@ def amazon(request):
 
             data = [{"image": item.image,
                      "image_path": item.image_path,
-                     "product_link": item.image_path,
+                     "product_link": item.product_link,
                      "title": item.title,}
                     for item in saved_products_send]
             res = data
