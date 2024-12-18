@@ -38,12 +38,10 @@ class AliExpress:
                      key_words: str,
                      min_price: int,
                      max_price: int,
-                     delivery_days: int,
                      page_no: int = 0):
         return self.__aliexpress.get_hotproducts(keywords=key_words,
                                                  max_sale_price=max_price,
                                                  min_sale_price=min_price,
-                                                 delivery_days=delivery_days,
                                                  page_size=50,
                                                  ship_to_country="PT",
                                                  page_no=page_no)

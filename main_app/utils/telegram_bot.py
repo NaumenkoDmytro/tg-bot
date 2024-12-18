@@ -39,7 +39,8 @@ class InfoBot:
             'chat_id': self.__CHANEL_ID,
             'caption': msg,
             'video': data['video_url'],
-            'parse_mode': 'HTML'
+            'parse_mode': 'HTML',
+            'disable_notification': True
         }
         self.__send_message_video(api_token=self.__API_TOKEN, data=payload)
         print("Message sent")
@@ -55,7 +56,8 @@ class InfoBot:
                 payload = {
                     'chat_id': self.__CHANEL_ID,
                     'caption': msg,
-                    'parse_mode': 'HTML'
+                    'parse_mode': 'HTML',
+                    'disable_notification': True
                 }
                 files = {
                     'photo': image_file,
@@ -67,7 +69,8 @@ class InfoBot:
                 'chat_id': self.__CHANEL_ID,
                 'caption': msg,
                 'photo': data['image'],
-                'parse_mode': 'markdown'
+                'parse_mode': 'markdown',
+                'disable_notification': True
             }
             self.__send_message(api_token=self.__API_TOKEN, data=payload)
         print("Message sent")

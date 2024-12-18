@@ -10,9 +10,9 @@ class Command(BaseCommand):
         scheduler = BlockingScheduler()
 
         scheduler.add_job(start_amazon_auto_task,
-                          CronTrigger.from_crontab("* * * * *", timezone='UTC'))
+                          CronTrigger.from_crontab("0 */4 * * *", timezone='UTC'))
         scheduler.add_job(start_aliexpress_auto_task,
-                          CronTrigger.from_crontab("* * * * *", timezone='UTC'))
+                          CronTrigger.from_crontab("0 */4 * * *", timezone='UTC'))
         scheduler.start()
         print("Scheduler exited")
         # "0 */1 * * *"

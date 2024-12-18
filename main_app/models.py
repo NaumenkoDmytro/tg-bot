@@ -252,9 +252,9 @@ class AliExpressAutomationTask(models.Model):
     max_price = models.IntegerField(_('Max Price'),
                                     help_text='Filters search results to items with at least one offer price above the specified value. Prices appear in lowest currency denomination. For example, $31.41 should be passed as 3141 or 28.00€ should be 2800.',
                                     default=0)
-    delivery_days = models.PositiveSmallIntegerField(_('Delivery Days'),
-                                                    default=0,
-                                                    validators=[MaxValueValidator(100)],)
+    # delivery_days = models.PositiveSmallIntegerField(_('Delivery Days'),
+    #                                                 default=0,
+    #                                                 validators=[MaxValueValidator(100)],)
     min_saving_percent = models.PositiveSmallIntegerField(_('Min Savings Percent'),
                                                           help_text="Filters search results to items with at least one offer having saving percentage above the specified value.",
                                                           default=0,

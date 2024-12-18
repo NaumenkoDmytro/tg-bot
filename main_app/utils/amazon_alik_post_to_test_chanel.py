@@ -100,7 +100,6 @@ def alik(obj: AliExpressAutomationTask):
             items = aliexpress.get_products(key_words=obj.keywords,
                                             min_price=obj.min_price,
                                             max_price=obj.max_price,
-                                            delivery_days=obj.delivery_days,
                                             page_no=curr_page_no, )
 
             curr_rec_num = items.current_record_count
@@ -124,7 +123,6 @@ def alik(obj: AliExpressAutomationTask):
                     items = aliexpress.get_products(key_words=obj.keywords,
                                                     min_price=obj.min_price,
                                                     max_price=obj.max_price,
-                                                    delivery_days=obj.delivery_days,
                                                     page_no=curr_page_no, )
                     curr_rec_num += items.current_record_count
                     pprint(items)
