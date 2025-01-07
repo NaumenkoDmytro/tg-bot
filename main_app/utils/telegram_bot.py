@@ -30,7 +30,6 @@ class InfoBot:
 
     def send_video(self, data: dict):
         msg = (f"{data['title']}\n\n"
-               f"💶 Preço: {data['price']}€\n\n"
                f"🔗 <a href='{data['product_link']}'>Link do produto</a>\n\n"
                f"📩 <a href='{self.chanel_link}'>{self.chanel_name}</a>"
                )

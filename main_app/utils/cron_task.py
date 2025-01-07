@@ -37,7 +37,7 @@ def start_amazon_auto_task():
             for bot in bots:
                 for res in data:
                     bot.send_message(res)
-                    sleep(2700)
+                    sleep(3600)
             task.status = 'Done'
             task.save()
 
@@ -72,7 +72,7 @@ def start_aliexpress_auto_task():
             for bot in bots:
                 for res in data:
                     bot.send_video(res)
-                    sleep(2700)
+                    sleep(3600)
             task.status = 'Done'
             task.save()
         except Exception as e:
